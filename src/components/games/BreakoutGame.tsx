@@ -7,6 +7,7 @@ export default function BreakoutGame() {
   const [gameOver, setGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);
   const [score, setScore] = useState(0);
+  const pressedRef = useRef({ left: false, right: false }); // Ref for pressed states
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,8 +32,6 @@ export default function BreakoutGame() {
     const brickPadding = 10;
     const brickOffsetTop = 30;
     const brickOffsetLeft = 30;
-    let rightPressed = false;
-    let leftPressed = false;
 
     // Create bricks
     const bricks: { x: number; y: number; status: number }[][] = [];
@@ -43,14 +42,18 @@ export default function BreakoutGame() {
       }
     }
 
-    // Event listeners
+    // Event listeners for keyboard
     const keyDownHandler = (e: KeyboardEvent) => {
-      if (e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
-      else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
+      if (e.key === "Right" || e.key === "ArrowRight")
+        pressedRef.current.right = true;
+      else if (e.key === "Left" || e.key === "ArrowLeft")
+        pressedRef.current.left = true;
     };
     const keyUpHandler = (e: KeyboardEvent) => {
-      if (e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
-      else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
+      if (e.key === "Right" || e.key === "ArrowRight")
+        pressedRef.current.right = false;
+      else if (e.key === "Left" || e.key === "ArrowLeft")
+        pressedRef.current.left = false;
     };
     document.addEventListener("keydown", keyDownHandler);
     document.addEventListener("keyup", keyUpHandler);
@@ -114,9 +117,10 @@ export default function BreakoutGame() {
       x += dx;
       y += dy;
 
-      // Paddle movement
-      if (rightPressed && paddleX < canvas.width - paddleWidth) paddleX += 7;
-      if (leftPressed && paddleX > 0) paddleX -= 7;
+      // Paddle movement using ref values
+      if (pressedRef.current.right && paddleX < canvas.width - paddleWidth)
+        paddleX += 7;
+      if (pressedRef.current.left && paddleX > 0) paddleX -= 7;
 
       // Collision detection
       if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
@@ -169,6 +173,8 @@ export default function BreakoutGame() {
     setGameOver(false);
     setGameWon(false);
     setScore(0);
+    pressedRef.current.left = false;
+    pressedRef.current.right = false;
   };
 
   return (
@@ -205,6 +211,23 @@ export default function BreakoutGame() {
         height={320}
         className="border border-gray-300"
       />
+      {/* Mobile controls */}
+      <div className="flex gap-4 mt-4 md:hidden">
+        <button
+          onTouchStart={() => (pressedRef.current.left = true)}
+          onTouchEnd={() => (pressedRef.current.left = false)}
+          className="bg-gray-700 text-white px-6 py-3 rounded-full text-lg font-bold active:bg-gray-900"
+        >
+          Left
+        </button>
+        <button
+          onTouchStart={() => (pressedRef.current.right = true)}
+          onTouchEnd={() => (pressedRef.current.right = false)}
+          className="bg-gray-700 text-white px-6 py-3 rounded-full text-lg font-bold active:bg-gray-900"
+        >
+          Right
+        </button>
+      </div>
     </div>
   );
 }
