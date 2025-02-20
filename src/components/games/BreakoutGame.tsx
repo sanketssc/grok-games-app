@@ -7,7 +7,31 @@ export default function BreakoutGame() {
   const [gameOver, setGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);
   const [score, setScore] = useState(0);
-  const pressedRef = useRef({ left: false, right: false }); // Ref for pressed states
+  const [canvasSize, setCanvasSize] = useState({ width: 480, height: 320 });
+  const pressedRef = useRef({ left: false, right: false });
+
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      const maxWidth = Math.min(window.innerWidth * 0.9, 480); // 90% of viewport width, max 480
+      const maxHeight = Math.min(window.innerHeight * 0.6, 320); // 60% of viewport height, max 320
+      const aspectRatio = 480 / 320; // 3:2 aspect ratio
+
+      let newWidth = maxWidth;
+      let newHeight = newWidth / aspectRatio;
+
+      if (newHeight > maxHeight) {
+        newHeight = maxHeight;
+        newWidth = newHeight * aspectRatio;
+      }
+
+      setCanvasSize({ width: newWidth, height: newHeight });
+    };
+
+    updateCanvasSize();
+    window.addEventListener("resize", updateCanvasSize);
+
+    return () => window.removeEventListener("resize", updateCanvasSize);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -16,22 +40,26 @@ export default function BreakoutGame() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Game variables
-    const ballRadius = 10;
-    let x = canvas.width / 2;
-    let y = canvas.height - 30;
-    let dx = 2;
-    let dy = -2;
-    const paddleHeight = 10;
-    const paddleWidth = 75;
-    let paddleX = (canvas.width - paddleWidth) / 2;
+    // Scale factors based on current canvas size
+    const scaleX = canvasSize.width / 480;
+    const scaleY = canvasSize.height / 320;
+
+    // Game variables (scaled)
+    const ballRadius = 10 * scaleX;
+    let x = canvasSize.width / 2;
+    let y = canvasSize.height - 30 * scaleY;
+    let dx = 2 * scaleX;
+    let dy = -2 * scaleY;
+    const paddleHeight = 10 * scaleY;
+    const paddleWidth = 75 * scaleX;
+    let paddleX = (canvasSize.width - paddleWidth) / 2;
     const brickRowCount = 3;
     const brickColumnCount = 5;
-    const brickWidth = 75;
-    const brickHeight = 20;
-    const brickPadding = 10;
-    const brickOffsetTop = 30;
-    const brickOffsetLeft = 30;
+    const brickWidth = 75 * scaleX;
+    const brickHeight = 20 * scaleY;
+    const brickPadding = 10 * scaleX;
+    const brickOffsetTop = 30 * scaleY;
+    const brickOffsetLeft = 30 * scaleX;
 
     // Create bricks
     const bricks: { x: number; y: number; status: number }[][] = [];
@@ -75,7 +103,7 @@ export default function BreakoutGame() {
     const draw = () => {
       if (!ctx) return;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
 
       // Draw ball
       ctx.beginPath();
@@ -88,7 +116,7 @@ export default function BreakoutGame() {
       ctx.beginPath();
       ctx.rect(
         paddleX,
-        canvas.height - paddleHeight,
+        canvasSize.height - paddleHeight,
         paddleWidth,
         paddleHeight
       );
@@ -118,14 +146,15 @@ export default function BreakoutGame() {
       y += dy;
 
       // Paddle movement using ref values
-      if (pressedRef.current.right && paddleX < canvas.width - paddleWidth)
-        paddleX += 7;
-      if (pressedRef.current.left && paddleX > 0) paddleX -= 7;
+      if (pressedRef.current.right && paddleX < canvasSize.width - paddleWidth)
+        paddleX += 7 * scaleX;
+      if (pressedRef.current.left && paddleX > 0) paddleX -= 7 * scaleX;
 
       // Collision detection
-      if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
+      if (x + dx > canvasSize.width - ballRadius || x + dx < ballRadius)
+        dx = -dx;
       if (y + dy < ballRadius) dy = -dy;
-      else if (y + dy > canvas.height - ballRadius) {
+      else if (y + dy > canvasSize.height - ballRadius) {
         if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
         else {
           setGameOver(true);
@@ -167,7 +196,7 @@ export default function BreakoutGame() {
       document.removeEventListener("keydown", keyDownHandler);
       document.removeEventListener("keyup", keyUpHandler);
     };
-  }, [gameOver, gameWon]);
+  }, [gameOver, gameWon, canvasSize]);
 
   const resetGame = () => {
     setGameOver(false);
@@ -178,7 +207,7 @@ export default function BreakoutGame() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto">
       <div>Score: {score}</div>
       {gameOver && (
         <div className="text-center">
@@ -207,9 +236,9 @@ export default function BreakoutGame() {
       )}
       <canvas
         ref={canvasRef}
-        width={480}
-        height={320}
-        className="border border-gray-300"
+        width={canvasSize.width}
+        height={canvasSize.height}
+        className="border border-gray-300 w-full"
       />
       {/* Mobile controls */}
       <div className="flex gap-4 mt-4 md:hidden">
