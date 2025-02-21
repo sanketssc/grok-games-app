@@ -8,13 +8,14 @@ export default function BreakoutGame() {
   const [gameWon, setGameWon] = useState(false);
   const [score, setScore] = useState(0);
   const [canvasSize, setCanvasSize] = useState({ width: 480, height: 320 });
-  const pressedRef = useRef({ left: false, right: false });
+  const paddleRef = useRef({ x: 0, leftPressed: false, rightPressed: false });
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     const updateCanvasSize = () => {
-      const maxWidth = Math.min(window.innerWidth * 0.9, 480); // 90% of viewport width, max 480
-      const maxHeight = Math.min(window.innerHeight * 0.6, 320); // 60% of viewport height, max 320
-      const aspectRatio = 480 / 320; // 3:2 aspect ratio
+      const maxWidth = Math.min(window.innerWidth * 0.9, 480);
+      const maxHeight = Math.min(window.innerHeight * 0.6, 320);
+      const aspectRatio = 480 / 320;
 
       let newWidth = maxWidth;
       let newHeight = newWidth / aspectRatio;
@@ -52,7 +53,8 @@ export default function BreakoutGame() {
     let dy = -2 * scaleY;
     const paddleHeight = 10 * scaleY;
     const paddleWidth = 75 * scaleX;
-    let paddleX = (canvasSize.width - paddleWidth) / 2;
+    const PADDLE_SPEED = 7 * scaleX;
+    paddleRef.current.x = (canvasSize.width - paddleWidth) / 2;
     const brickRowCount = 3;
     const brickColumnCount = 5;
     const brickWidth = 75 * scaleX;
@@ -73,15 +75,15 @@ export default function BreakoutGame() {
     // Event listeners for keyboard
     const keyDownHandler = (e: KeyboardEvent) => {
       if (e.key === "Right" || e.key === "ArrowRight")
-        pressedRef.current.right = true;
+        paddleRef.current.rightPressed = true;
       else if (e.key === "Left" || e.key === "ArrowLeft")
-        pressedRef.current.left = true;
+        paddleRef.current.leftPressed = true;
     };
     const keyUpHandler = (e: KeyboardEvent) => {
       if (e.key === "Right" || e.key === "ArrowRight")
-        pressedRef.current.right = false;
+        paddleRef.current.rightPressed = false;
       else if (e.key === "Left" || e.key === "ArrowLeft")
-        pressedRef.current.left = false;
+        paddleRef.current.leftPressed = false;
     };
     document.addEventListener("keydown", keyDownHandler);
     document.addEventListener("keyup", keyUpHandler);
@@ -91,9 +93,7 @@ export default function BreakoutGame() {
       let remainingBricks = 0;
       for (let c = 0; c < brickColumnCount; c++) {
         for (let r = 0; r < brickRowCount; r++) {
-          if (bricks[c][r].status === 1) {
-            remainingBricks++;
-          }
+          if (bricks[c][r].status === 1) remainingBricks++;
         }
       }
       return remainingBricks === 0;
@@ -112,10 +112,26 @@ export default function BreakoutGame() {
       ctx.fill();
       ctx.closePath();
 
+      // Paddle movement using ref
+      if (
+        paddleRef.current.rightPressed &&
+        paddleRef.current.x < canvasSize.width - paddleWidth
+      ) {
+        paddleRef.current.x += PADDLE_SPEED;
+      }
+      if (paddleRef.current.leftPressed && paddleRef.current.x > 0) {
+        paddleRef.current.x -= PADDLE_SPEED;
+      }
+
+      // Bounce paddle at edges instantly
+      if (paddleRef.current.x < 0) paddleRef.current.x = 0;
+      if (paddleRef.current.x > canvasSize.width - paddleWidth)
+        paddleRef.current.x = canvasSize.width - paddleWidth;
+
       // Draw paddle
       ctx.beginPath();
       ctx.rect(
-        paddleX,
+        paddleRef.current.x,
         canvasSize.height - paddleHeight,
         paddleWidth,
         paddleHeight
@@ -145,17 +161,13 @@ export default function BreakoutGame() {
       x += dx;
       y += dy;
 
-      // Paddle movement using ref values
-      if (pressedRef.current.right && paddleX < canvasSize.width - paddleWidth)
-        paddleX += 7 * scaleX;
-      if (pressedRef.current.left && paddleX > 0) paddleX -= 7 * scaleX;
-
       // Collision detection
       if (x + dx > canvasSize.width - ballRadius || x + dx < ballRadius)
         dx = -dx;
       if (y + dy < ballRadius) dy = -dy;
       else if (y + dy > canvasSize.height - ballRadius) {
-        if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
+        if (x > paddleRef.current.x && x < paddleRef.current.x + paddleWidth)
+          dy = -dy;
         else {
           setGameOver(true);
           return;
@@ -176,8 +188,6 @@ export default function BreakoutGame() {
               dy = -dy;
               b.status = 0;
               setScore((prev) => prev + 1);
-
-              // Check win condition after each brick hit
               if (checkWinCondition()) {
                 setGameWon(true);
                 return;
@@ -187,14 +197,17 @@ export default function BreakoutGame() {
         }
       }
 
-      if (!gameOver && !gameWon) requestAnimationFrame(draw);
+      if (!gameOver && !gameWon)
+        animationFrameRef.current = requestAnimationFrame(draw);
     };
 
-    draw();
+    animationFrameRef.current = requestAnimationFrame(draw);
 
     return () => {
       document.removeEventListener("keydown", keyDownHandler);
       document.removeEventListener("keyup", keyUpHandler);
+      if (animationFrameRef.current !== null)
+        cancelAnimationFrame(animationFrameRef.current);
     };
   }, [gameOver, gameWon, canvasSize]);
 
@@ -202,8 +215,12 @@ export default function BreakoutGame() {
     setGameOver(false);
     setGameWon(false);
     setScore(0);
-    pressedRef.current.left = false;
-    pressedRef.current.right = false;
+    paddleRef.current.leftPressed = false;
+    paddleRef.current.rightPressed = false;
+    const canvas = canvasRef.current;
+    if (canvas)
+      paddleRef.current.x =
+        (canvasSize.width - 75 * (canvasSize.width / 480)) / 2;
   };
 
   return (
@@ -243,16 +260,16 @@ export default function BreakoutGame() {
       {/* Mobile controls */}
       <div className="flex gap-4 mt-4 md:hidden">
         <button
-          onTouchStart={() => (pressedRef.current.left = true)}
-          onTouchEnd={() => (pressedRef.current.left = false)}
-          className="bg-gray-700 text-white px-6 py-3 rounded-full text-lg font-bold active:bg-gray-900"
+          onTouchStart={() => (paddleRef.current.leftPressed = true)}
+          onTouchEnd={() => (paddleRef.current.leftPressed = false)}
+          className="bg-gray-700 text-white px-6 py-3 rounded-full text-lg font-bold active:bg-gray-900 select-none focus:outline-none"
         >
           Left
         </button>
         <button
-          onTouchStart={() => (pressedRef.current.right = true)}
-          onTouchEnd={() => (pressedRef.current.right = false)}
-          className="bg-gray-700 text-white px-6 py-3 rounded-full text-lg font-bold active:bg-gray-900"
+          onTouchStart={() => (paddleRef.current.rightPressed = true)}
+          onTouchEnd={() => (paddleRef.current.rightPressed = false)}
+          className="bg-gray-700 text-white px-6 py-3 rounded-full text-lg font-bold active:bg-gray-900 select-none focus:outline-none"
         >
           Right
         </button>

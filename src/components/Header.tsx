@@ -29,6 +29,14 @@ export default function Header() {
           >
             Breakout
           </Link>
+          <Link
+            href="/games/classic1942"
+            className={`hover:text-blue-200 ${
+              pathname === "/games/classic1942" ? "underline" : ""
+            }`}
+          >
+            Classic 1942
+          </Link>
         </div>
       </nav>
     </header>

@@ -13,10 +13,13 @@ export default function Home() {
           <h2 className="text-2xl font-semibold">Breakout</h2>
           <p>Classic brick-breaking action</p>
         </Link>
-        <div className="bg-gray-300 text-gray-600 p-6 rounded-lg">
-          <h2 className="text-2xl font-semibold">More Games Coming Soon</h2>
-          <p>Stay tuned for new additions!</p>
-        </div>
+        <Link
+          href="/games/classic1942"
+          className="bg-blue-500 text-white p-6 rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          <h2 className="text-2xl font-semibold">Classic 1942</h2>
+          <p>Endless airplane shooter</p>
+        </Link>
       </div>
       <Link
         href="/games"

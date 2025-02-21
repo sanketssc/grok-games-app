@@ -12,6 +12,13 @@ export default function GamesPage() {
           <h2 className="text-xl font-semibold mb-2">Breakout</h2>
           <p className="text-gray-600">Classic brick-breaking game</p>
         </Link>
+        <Link
+          href="/games/classic1942"
+          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+        >
+          <h2 className="text-xl font-semibold mb-2">Classic 1942</h2>
+          <p className="text-gray-600">Endless airplane shooter</p>
+        </Link>
       </div>
     </div>
   );
