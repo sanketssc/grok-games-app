@@ -1,52 +1,43 @@
+// components/Header.tsx or app/layout.tsx
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function Header() {
-  const pathname = usePathname();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Toggle dark mode and persist in localStorage
+  useEffect(() => {
+    const savedMode = localStorage.getItem("darkMode") === "true";
+    setIsDarkMode(savedMode);
+    document.documentElement.classList.toggle("dark", savedMode);
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    localStorage.setItem("darkMode", newMode.toString());
+    document.documentElement.classList.toggle("dark", newMode);
+  };
 
   return (
-    <header className="bg-blue-600 text-white p-4">
-      <nav className="container mx-auto flex justify-between items-center">
-        <Link href="/" className="text-2xl font-bold">
-          Games App
+    <header className="header bg-gray-200 dark:bg-gray-800 text-black dark:text-white p-4 flex justify-between items-center">
+      <nav>
+        <Link href="/" className="mr-4 hover:underline">
+          Home
         </Link>
-        <div className="space-x-4">
-          <Link
-            href="/games"
-            className={`hover:text-blue-200 ${
-              pathname === "/games" ? "underline" : ""
-            }`}
-          >
-            Games
-          </Link>
-          <Link
-            href="/games/breakout"
-            className={`hover:text-blue-200 ${
-              pathname === "/games/breakout" ? "underline" : ""
-            }`}
-          >
-            Breakout
-          </Link>
-          <Link
-            href="/games/classic1942"
-            className={`hover:text-blue-200 ${
-              pathname === "/games/classic1942" ? "underline" : ""
-            }`}
-          >
-            Classic 1942
-          </Link>
-          <Link
-            href="/games/pacman"
-            className={`hover:text-blue-200 ${
-              pathname === "/games/pacman" ? "underline" : ""
-            }`}
-          >
-            Pac-Man
-          </Link>
-        </div>
+        <Link href="/about" className="mr-4 hover:underline">
+          About
+        </Link>
+        {/* Removed individual game links */}
       </nav>
+      <button
+        onClick={toggleDarkMode}
+        className="p-2 rounded bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500"
+      >
+        {isDarkMode ? "Light Mode" : "Dark Mode"}
+      </button>
     </header>
   );
 }

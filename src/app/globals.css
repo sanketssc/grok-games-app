@@ -1,9 +1,35 @@
+/* app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --foreground: #000000;
+  --background: #ffffff;
+}
+
+.dark {
+  --foreground: #ffffff;
+  --background: #1a1a1a;
+}
+
 body {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* Ensure game pages opt out of dark mode */
+.game-page {
+  color: #000000;
+  background: #ffffff;
+}
+
+/* Optional: Ensure dark mode consistency for game links */
+a {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+a:hover {
+  color: var(--foreground);
 }
