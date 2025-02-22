@@ -37,6 +37,14 @@ export default function Header() {
           >
             Classic 1942
           </Link>
+          <Link
+            href="/games/pacman"
+            className={`hover:text-blue-200 ${
+              pathname === "/games/pacman" ? "underline" : ""
+            }`}
+          >
+            Pac-Man
+          </Link>
         </div>
       </nav>
     </header>
