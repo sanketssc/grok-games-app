@@ -164,13 +164,7 @@ export default function PacManGame() {
       }
     });
 
-    // Initialize dots and count total dots
-    const totalDots = maze.reduce(
-      (count, row) =>
-        count +
-        row.reduce((rowCount, cell) => rowCount + (cell === 0 ? 1 : 0), 0),
-      0
-    );
+    // Initialize dots
     dotsRef.current = [];
     for (let y = 0; y < maze.length; y++) {
       for (let x = 0; x < maze[y].length; x++) {
@@ -477,7 +471,8 @@ export default function PacManGame() {
       });
 
       // Check for win condition (all dots collected)
-      if (dotsCollected === dotsRef.current.length) {
+      const totalDots = dotsRef.current.length; // Calculate total dynamically
+      if (dotsCollected === totalDots) {
         setWin(true);
         return; // Stop the game loop when winning
       }
@@ -493,9 +488,12 @@ export default function PacManGame() {
       if (animationFrameRef.current !== null)
         cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [gameOver, win, canvasSize]); // Added win to dependencies
+  }, [gameOver, win, canvasSize, isMobile, maze]);
 
   const resetGame = () => {
+    const tileSize = canvasSize.width / 19; // Recompute tileSize for reset
+    const ghostSpeed = tileSize; // Full tile jump for ghosts
+
     setGameOver(false);
     setWin(false); // Reset win state
     setScore(0);
@@ -547,7 +545,6 @@ export default function PacManGame() {
       },
     ];
     dotsRef.current = [];
-    const tileSize = canvasSize.width / 19; // Recompute tileSize for reset
     for (let y = 0; y < maze.length; y++) {
       for (let x = 0; x < maze[y].length; x++) {
         if (maze[y][x] === 0) {
