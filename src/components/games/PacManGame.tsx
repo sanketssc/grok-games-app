@@ -8,6 +8,7 @@ export default function PacManGame() {
   const [score, setScore] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ width: 760, height: 840 });
+  const [win, setWin] = useState(false); // New state for win condition
   const pacmanRef = useRef({
     x: 0,
     y: 0,
@@ -36,7 +37,7 @@ export default function PacManGame() {
   const dotsRef = useRef<{ x: number; y: number; collected: boolean }[]>([]);
   const animationFrameRef = useRef<number | null>(null);
 
-  // Updated maze with 6-tile (3x3) middle block and teleport passages
+  // Classic Pac-Man maze with 6-tile (3x3) middle block and teleport passages
   const maze = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -163,7 +164,13 @@ export default function PacManGame() {
       }
     });
 
-    // Initialize dots
+    // Initialize dots and count total dots
+    const totalDots = maze.reduce(
+      (count, row) =>
+        count +
+        row.reduce((rowCount, cell) => rowCount + (cell === 0 ? 1 : 0), 0),
+      0
+    );
     dotsRef.current = [];
     for (let y = 0; y < maze.length; y++) {
       for (let x = 0; x < maze[y].length; x++) {
@@ -448,6 +455,7 @@ export default function PacManGame() {
       });
 
       // Draw and collect dots
+      let dotsCollected = 0;
       dotsRef.current.forEach((dot) => {
         if (!dot.collected) {
           ctx.beginPath();
@@ -465,9 +473,17 @@ export default function PacManGame() {
             setScore((prev) => prev + 10);
           }
         }
+        if (dot.collected) dotsCollected++;
       });
 
-      if (!gameOver) animationFrameRef.current = requestAnimationFrame(draw);
+      // Check for win condition (all dots collected)
+      if (dotsCollected === dotsRef.current.length) {
+        setWin(true);
+        return; // Stop the game loop when winning
+      }
+
+      if (!gameOver && !win)
+        animationFrameRef.current = requestAnimationFrame(draw);
     };
 
     animationFrameRef.current = requestAnimationFrame(draw);
@@ -477,14 +493,15 @@ export default function PacManGame() {
       if (animationFrameRef.current !== null)
         cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [gameOver, canvasSize]);
+  }, [gameOver, win, canvasSize]); // Added win to dependencies
 
   const resetGame = () => {
     setGameOver(false);
+    setWin(false); // Reset win state
     setScore(0);
     pacmanRef.current = {
-      x: 0,
-      y: 0,
+      x: tileSize,
+      y: tileSize,
       dx: 0,
       dy: 0,
       nextDx: 0,
@@ -492,8 +509,56 @@ export default function PacManGame() {
       moving: false,
       lastMoveTime: 0,
     };
-    ghostsRef.current = [];
+    ghostsRef.current = [
+      {
+        x: tileSize * 9,
+        y: tileSize * 10,
+        dx: ghostSpeed,
+        dy: 0,
+        color: "#FF0000",
+        moving: false,
+        lastMoveTime: 0,
+        speedScale: 1.0,
+        behavior: "follow",
+      },
+      {
+        x: tileSize * 9,
+        y: tileSize * 10,
+        dx: -ghostSpeed,
+        dy: 0,
+        color: "#FFB8FF",
+        moving: false,
+        lastMoveTime: 0,
+        speedScale: 0.8,
+        behavior: "random",
+      },
+      {
+        x: tileSize * 9,
+        y: tileSize * 10,
+        dx: 0,
+        dy: -ghostSpeed,
+        color: "#00FFFF",
+        moving: false,
+        lastMoveTime: 0,
+        speedScale: 1.2,
+        behavior: "patrol",
+        prevDx: 0,
+        prevDy: -ghostSpeed,
+      },
+    ];
     dotsRef.current = [];
+    const tileSize = canvasSize.width / 19; // Recompute tileSize for reset
+    for (let y = 0; y < maze.length; y++) {
+      for (let x = 0; x < maze[y].length; x++) {
+        if (maze[y][x] === 0) {
+          dotsRef.current.push({
+            x: x * tileSize + tileSize / 2,
+            y: y * tileSize + tileSize / 2,
+            collected: false,
+          });
+        }
+      }
+    }
   };
 
   if (isMobile) {
@@ -511,9 +576,11 @@ export default function PacManGame() {
   return (
     <div className="flex flex-col items-center gap-4 w-full max-w-[760px] mx-auto">
       <div>Score: {score}</div>
-      {gameOver && (
+      {(gameOver || win) && (
         <div className="text-center">
-          <p className="text-red-600 text-xl mb-2">Game Over!</p>
+          <p className="text-3xl font-bold mb-2 text-red-600">
+            {gameOver ? "Game Over!" : "You Win!"}
+          </p>
           <button
             onClick={resetGame}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
