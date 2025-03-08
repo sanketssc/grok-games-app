@@ -7,7 +7,7 @@ export async function middleware(req: NextRequest) {
   const ip = forwardedFor
     ? forwardedFor.split(",")[0].trim()
     : req.headers.get("x-real-ip") || "";
-
+  console.log({ ip });
   // Return the IP address
   return NextResponse.next();
 }
